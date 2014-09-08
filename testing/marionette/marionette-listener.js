@@ -781,12 +781,26 @@ function coordinates(target, x, y) {
 /**
  * This function returns if the element is in viewport
  */
-function elementInViewport(el) {
-  let rect = el.getBoundingClientRect();
+function elementInViewport(el, coordinates) {
+
+  let rect = {
+      top: coordinates.y,
+      left: coordinates.x,
+      bottom:coordinates.y,
+      right: coordinates.x
+    }
+
   let viewPort = {top: curFrame.pageYOffset,
                   left: curFrame.pageXOffset,
                   bottom: (curFrame.pageYOffset + curFrame.innerHeight),
                   right:(curFrame.pageXOffset + curFrame.innerWidth)};
+
+
+  logger.info("========================================================================================================");
+  logger.info(viewPort);
+  logger.info(rect);
+  logger.info("=========================================================================================================");
+
   return (viewPort.left <= rect.right + curFrame.pageXOffset &&
           rect.left + curFrame.pageXOffset <= viewPort.right &&
           viewPort.top <= rect.bottom + curFrame.pageYOffset &&
@@ -796,7 +810,7 @@ function elementInViewport(el) {
 /**
  * This function throws the visibility of the element error
  */
-function checkVisible(el) {
+function checkVisible(el, coordinates) {
   //check if the element is visible
   let visible = utils.isElementDisplayed(el);
   if (!visible) {
@@ -805,11 +819,11 @@ function checkVisible(el) {
   if (el.tagName.toLowerCase() === 'body') {
     return true;
   }
-  if (!elementInViewport(el)) {
+  if (!elementInViewport(el, coordinates)) {
     //check if scroll function exist. If so, call it.
     if (el.scrollIntoView) {
       el.scrollIntoView(false);
-      if (!elementInViewport(el)) {
+      if (!elementInViewport(el, coordinates)) {
         return false;
       }
     }
@@ -927,16 +941,17 @@ function singleTap(msg) {
   let command_id = msg.json.command_id;
   try {
     let el = elementManager.getKnownElement(msg.json.id, curFrame);
+    let coord = coordinates(el, msg.json.corx, msg.json.cory);
+    logger.info("===================OKOKOKO====================");
     // after this block, the element will be scrolled into view
-    if (!checkVisible(el)) {
+    if (!checkVisible(el, coord)) {
        sendError("Element is not currently visible and may not be manipulated", 11, null, command_id);
        return;
     }
     if (!curFrame.document.createTouch) {
       mouseEventsOnly = true;
     }
-    let c = coordinates(el, msg.json.corx, msg.json.cory);
-    generateEvents('tap', c.x, c.y, null, el);
+    generateEvents('tap', coord.x, coord.y, null, el);
     sendOk(msg.json.command_id);
   }
   catch (e) {
